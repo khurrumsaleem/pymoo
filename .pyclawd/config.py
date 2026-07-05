@@ -66,6 +66,8 @@ project = Project(
     name="pymoo",
     conda_env="default",
     root_markers=["pymoo/__init__.py", "setup.py"],
+    # Where pyclawd writes this project's transient files (run logs, junit, scratch).
+    work_dir="/tmp/pymoo",
     # Default root for `pyclawd ls` — pymoo uses a flat package layout (not src/).
     src_dir="pymoo",
     # Build knobs grouped into BuildConfig (drives `pyclawd compile`/`dist`/`clean`).
