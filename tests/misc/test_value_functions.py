@@ -40,8 +40,8 @@ def test_ranking(P, rankings, output):
     ## Test whether the solutions are ranked by ranking 
     P_from_prob = vf_prob.P
 
-    # Check the solutions 
-    assert np.all(output == P_from_prob)
+    # Check the solutions
+    np.testing.assert_array_equal(output, P_from_prob)
    
 
 ## TODO test the constructor with partial ordering 
@@ -81,7 +81,7 @@ def test_obj(x, obj):
     result = mvf._obj_func(x)
     
     # Test whether or not the objective function simply negates the epsilon term of x (last element)
-    assert np.all(obj == result)
+    np.testing.assert_array_equal(obj, result)
 
 
 ## ------------- Test the inequality constraint for linear function ---------------

@@ -59,7 +59,7 @@ def test_sphere(algorithm, seed):
                          ids=["nelder", "pattern", "pso", "ga", "de"])
 def test_sphere_with_constraints(algorithm, seed):
     problem = SphereWithConstraints()
-    f, f_opt = run(problem, algorithm)
+    f, f_opt = run(problem, algorithm, seed=seed)
     np.testing.assert_almost_equal(f, f_opt, decimal=4)
 
 

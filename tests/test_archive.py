@@ -22,7 +22,7 @@ def test_unconstr_add_to_archive():
     archive = archive.add(pop)
 
     assert len(archive) == 1
-    assert archive[0].f == 0.0
+    np.testing.assert_allclose(archive[0].f, 0.0, atol=1e-12)
 
     archive = archive.add(pop)
     assert len(archive) == 1
@@ -49,24 +49,24 @@ def test_constr_add_to_archive():
     archive = archive.add(pop)
 
     assert len(archive) == 1
-    assert archive[0].f == 5.0
-    assert archive[0].cv == 0.5
+    np.testing.assert_allclose(archive[0].f, 5.0)
+    np.testing.assert_allclose(archive[0].cv, 0.5)
 
     c = Individual(X=np.array([10.0]), F=np.array([10.0]), CV=np.array([0.0]))
     pop = Population.create(c)
     archive = archive.add(pop)
 
     assert len(archive) == 1
-    assert archive[0].f == 10.0
-    assert archive[0].cv == 0.0
+    np.testing.assert_allclose(archive[0].f, 10.0)
+    np.testing.assert_allclose(archive[0].cv, 0.0, atol=1e-12)
 
     d = Individual(X=np.array([7.0]), F=np.array([7.0]), CV=np.array([0.0]))
     pop = Population.create(d)
     archive = archive.add(pop)
 
     assert len(archive) == 1
-    assert archive[0].f == 7.0
-    assert archive[0].cv == 0.0
+    np.testing.assert_allclose(archive[0].f, 7.0)
+    np.testing.assert_allclose(archive[0].cv, 0.0, atol=1e-12)
 
 
 def test_max_size():

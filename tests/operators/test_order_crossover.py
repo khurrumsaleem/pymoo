@@ -50,6 +50,7 @@ def test_example_to_bound():
 
 
 def test_equal_constribution_no_shift():
+    np.random.seed(1)
     for _ in range(100):
         a = np.random.permutation(10)
         b = np.random.permutation(10)

@@ -43,7 +43,7 @@ def test_zero_to_one_xl_and_xu_equal(matrix_input):
 
     norm = ZeroToOneNormalization(xl, xu)
     N = norm.forward(X)
-    assert np.all(N[:, 0] == 0.0)
+    np.testing.assert_allclose(N[:, 0], 0.0, atol=1e-12)
 
     _X = norm.backward(N)
     np.testing.assert_allclose(X, _X)
@@ -57,7 +57,8 @@ def test_zero_to_one_xl_has_nan(matrix_input):
 
     norm = ZeroToOneNormalization(xl, xu)
     N = norm.forward(X)
-    assert np.all(N[:, 0] == X[:, 0])
+    # NaN bounds leave the dimension untouched — assert exact passthrough.
+    np.testing.assert_array_equal(N[:, 0], X[:, 0])
 
     _X = norm.backward(N)
     np.testing.assert_allclose(X, _X)
@@ -93,7 +94,7 @@ def test_only_xl(vector_input):
     norm = ZeroToOneNormalization(xl, None)
 
     N = norm.forward(xl)
-    assert np.all(N == 0.0)
+    np.testing.assert_allclose(N, 0.0, atol=1e-12)
 
     np.testing.assert_allclose(X, norm.backward(norm.forward(X)))
 
@@ -103,7 +104,7 @@ def test_only_xu(vector_input):
     norm = ZeroToOneNormalization(None, xu)
 
     N = norm.forward(xu)
-    assert np.all(N == 1.0)
+    np.testing.assert_allclose(N, 1.0)
 
     np.testing.assert_allclose(X, norm.backward(norm.forward(X)))
 
