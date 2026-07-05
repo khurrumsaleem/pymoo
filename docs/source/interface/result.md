@@ -45,8 +45,23 @@ The result directly contains the best-found values in the corresponding spaces.
 - `res.algorithm`: Algorithm object which has been iterated over
 - `res.opt`: The solutions as a `Population` object.
 - `res.pop`: The final Population
-- `res.history`: The history of the algorithm. (only if `save_history` has been enabled during the algorithm initialization)
+- `res.history`: The history of the algorithm. This is `None` unless `save_history=True` is passed to `minimize` (it stores a deep copy of the algorithm at every generation, so it is memory-intensive — see [Convergence](../misc/convergence.ipynb)).
 - `res.exec_time`: The time required to run the algorithm
+
+```{raw-cell}
+:raw_mimetype: text/restructuredtext
+
+.. admonition:: Shape contract
+    :class: note
+
+    For a **single-objective** problem ``res.X`` and ``res.F`` describe the single best
+    solution: ``res.X`` is a 1-D array of shape ``(n_var,)`` and ``res.F`` is a 1-D array
+    of shape ``(n_obj,)``. For a **multi-objective** problem they describe the whole
+    non-dominated set: ``res.X`` is a 2-D array of shape ``(n_solutions, n_var)`` and
+    ``res.F`` is ``(n_solutions, n_obj)``. Code that should work for both cases can read
+    the optimum uniformly via the population — ``res.opt.get("X")`` / ``res.opt.get("F")``
+    are always 2-D regardless of the number of objectives.
+```
 
 ```{code-cell} ipython3
 res.X

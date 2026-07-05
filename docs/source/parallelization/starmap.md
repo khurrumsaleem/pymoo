@@ -58,6 +58,18 @@ Then, we can pass a `starmap` object to be used for parallelization.
 
 +++ {"pycharm": {"name": "#%% md\n"}}
 
+**Threads vs. processes — which to choose:** a `ThreadPool` shares memory and avoids
+pickling, so it has very low overhead, but Python's Global Interpreter Lock (GIL) lets
+only one thread execute Python bytecode at a time. Threads therefore only speed up
+evaluations that release the GIL — those dominated by NumPy/C extensions or by external
+I/O (file/network/subprocess). For evaluations that are heavy *pure-Python* compute, use
+a process `Pool` instead: processes run on separate cores with no GIL contention, at the
+cost of pickling the problem and each solution to the workers (so the problem and
+everything it references must be picklable, and very fast evaluations may be dominated by
+that transfer overhead). Both are shown below.
+
++++ {"pycharm": {"name": "#%% md\n"}}
+
 ## Threads
 
 ```{code-cell} ipython3

@@ -24,6 +24,8 @@ Sometimes, it might be useful to store some checkpoints while executing an algor
 - the object-oriented way by repeatedly calling the `next()` method or 
 - from a text file ([Biased Initialization](../customization/initialization.ipynb) from `Population` )
 
+The examples below use [`dill`](https://pypi.org/project/dill/) (`pip install dill`) to serialize the algorithm. `dill` is preferred over the standard library's [`pickle`](https://docs.python.org/3/library/pickle.html) because it can also serialize objects `pickle` cannot — e.g. a problem or operator that holds a `lambda` or a locally-defined function, which is common when parallelizing. If your algorithm only references top-level objects, stdlib `pickle` works as a drop-in replacement (`import pickle as dill`) with no extra dependency. Note that neither can serialize an algorithm whose internal generator is mid-iteration; serialize between generations.
+
 +++
 
 ## Functional
