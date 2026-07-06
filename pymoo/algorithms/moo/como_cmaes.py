@@ -95,8 +95,11 @@ class COMOCMAES(Algorithm):
         self.moes.tell(self._sols, infills.get("F").tolist())
         Fp = np.array(self.moes.pareto_front_cut, dtype=float)
         Xp = np.array(self.moes.pareto_set_cut, dtype=float)
-        if len(Fp) > 0:
-            self.pop = Population.new(X=self.norm.backward(Xp), F=Fp)
+        # the cut set and front can momentarily desync in length when kernels go
+        # inactive — only update the population when they align.
+        m = min(len(Fp), len(Xp))
+        if m > 0:
+            self.pop = Population.new(X=self.norm.backward(Xp[:m]), F=Fp[:m])
 
 
 parse_doc_string(COMOCMAES.__init__)
