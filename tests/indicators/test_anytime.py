@@ -5,6 +5,7 @@ import pytest
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.indicators.anytime import (
+    AnytimeCallback,
     attainment_curve,
     data_profile,
     ecdf,
@@ -78,6 +79,37 @@ def test_attainment_curve_monotone_and_reaches_front():
     assert np.all(np.diff(n_evals) > 0)          # evaluations increase
     assert np.all(np.diff(values) <= 1e-12)      # best-so-far never worsens
     assert values[-1] < values[0]                # it converges
+
+
+def test_attainment_curve_stride_subsamples():
+    problem = get_problem("zdt1")
+    res = minimize(problem, NSGA2(pop_size=40), ("n_gen", 30), seed=1,
+                   save_history=True, verbose=False)
+    igd = IGD(problem.pareto_front())
+    ne_full, v_full = attainment_curve(res.history, igd, mode="min")
+    ne_5, v_5 = attainment_curve(res.history, igd, mode="min", stride=5)
+
+    assert len(ne_5) < len(ne_full)          # fewer points scored
+    assert ne_5[-1] == ne_full[-1]           # endpoint always included
+    # subsampled best-so-far is never better than the full-resolution curve
+    assert v_5[-1] >= v_full[-1] - 1e-12
+
+
+def test_anytime_callback_matches_history_without_save_history():
+    problem = get_problem("zdt1")
+    igd = IGD(problem.pareto_front())
+
+    cb = AnytimeCallback(igd, mode="min", stride=1)
+    minimize(problem, NSGA2(pop_size=40), ("n_gen", 20), seed=1,
+             callback=cb, verbose=False)   # note: no save_history
+    ne_cb, v_cb = cb.curve()
+
+    res_h = minimize(problem, NSGA2(pop_size=40), ("n_gen", 20), seed=1,
+                     save_history=True, verbose=False)
+    ne_h, v_h = attainment_curve(res_h.history, igd, mode="min")
+
+    np.testing.assert_allclose(ne_cb, ne_h)
+    np.testing.assert_allclose(v_cb, v_h)
 
 
 def test_data_profile_end_to_end():

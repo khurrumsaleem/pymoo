@@ -13,8 +13,55 @@ The building blocks compose as: run with ``save_history=True`` →
 
 import numpy as np
 
+from pymoo.core.callback import Callback
 
-def attainment_curve(history, indicator, mode="min"):
+
+class AnytimeCallback(Callback):
+    """Record an attainment curve during a run *without* ``save_history``.
+
+    Scoring the indicator every generation while ``save_history=True`` deep-copies
+    the whole algorithm is expensive — especially for single-point methods that run
+    thousands of generations. This callback instead keeps only the running
+    ``(n_evals, best-score)`` trace, scoring the current optimum every ``stride``
+    generations. Attach it via ``minimize(..., callback=cb)`` and read ``cb.curve()``.
+
+    Args:
+        indicator: Callable mapping an objective matrix ``F`` to a scalar score.
+        mode: ``"min"`` if lower is better (IGD, gap) or ``"max"`` (hypervolume).
+        stride: Score only every ``stride``-th generation.
+    """
+
+    def __init__(self, indicator, mode="min", stride=1):
+        super().__init__()
+        if mode not in ("min", "max"):
+            raise ValueError("mode must be 'min' or 'max'")
+        if stride < 1:
+            raise ValueError("stride must be >= 1")
+        self.indicator = indicator
+        self._better = min if mode == "min" else max
+        self.stride = stride
+        self._gen = 0
+        self._best = None
+        self.n_evals: list = []
+        self.values: list = []
+
+    def notify(self, algorithm) -> None:
+        terminated = algorithm.termination.has_terminated()
+        if self._gen % self.stride == 0 or terminated:
+            n_eval = algorithm.evaluator.n_eval
+            if not self.n_evals or self.n_evals[-1] != n_eval:  # dedup the endpoint
+                score = self.indicator(algorithm.opt.get("F"))
+                self._best = score if self._best is None else self._better(self._best, score)
+                self.n_evals.append(n_eval)
+                self.values.append(self._best)
+        self._gen += 1
+
+    def curve(self):
+        """Return the recorded ``(n_evals, values)`` attainment curve as arrays."""
+        return np.array(self.n_evals, dtype=float), np.array(self.values, dtype=float)
+
+
+def attainment_curve(history, indicator, mode="min", stride=1):
     """Best indicator value reached so far as a function of function evaluations.
 
     Args:
@@ -23,17 +70,26 @@ def attainment_curve(history, indicator, mode="min"):
         indicator: Callable mapping an objective matrix ``F`` to a scalar score.
         mode: ``"min"`` if a lower score is better (IGD, gap-to-optimum) or ``"max"``
             if higher is better (hypervolume).
+        stride: Score only every ``stride``-th generation (the final generation is
+            always scored, so the end-of-run value is exact). Larger values trade
+            curve resolution for speed when the indicator is expensive — the
+            first-hitting time is then resolved to within ``stride`` generations.
 
     Returns:
         Tuple ``(n_evals, values)`` of 1-D arrays: cumulative function evaluations and
-        the best-so-far indicator value at each recorded generation.
+        the best-so-far indicator value at each scored generation.
     """
     if mode not in ("min", "max"):
         raise ValueError("mode must be 'min' or 'max'")
+    if stride < 1:
+        raise ValueError("stride must be >= 1")
     better = min if mode == "min" else max
 
     n_evals, values, best = [], [], None
-    for entry in history:
+    last = len(history) - 1
+    for i, entry in enumerate(history):
+        if i % stride != 0 and i != last:
+            continue
         score = indicator(entry.opt.get("F"))
         best = score if best is None else better(best, score)
         n_evals.append(entry.evaluator.n_eval)
