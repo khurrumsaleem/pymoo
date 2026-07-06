@@ -52,11 +52,18 @@ def first_hitting_time(n_evals, values, target, mode="min"):
 
 
 def ert(runtimes, budget):
-    """Expected running time (COCO's aRT): total evaluations / number of successes.
+    """Expected running time — COCO's average runtime aRT.
+
+    ``aRT = (sum of successful runtimes + sum of evaluations spent in unsuccessful
+    trials) / number of successful trials`` (Hansen et al., COCO performance
+    assessment). Note the denominator is the number of *successes*, not of trials;
+    each failed trial contributes the evaluations it actually spent. Equivalent to
+    ``E(RT^s) + (1 - p_s) / p_s * E(RT^us)``.
 
     Args:
         runtimes: Per-run first-hitting-times for one target (``np.inf`` = failed).
-        budget: Maximum evaluations per run; each failed run contributes this much.
+        budget: Evaluations spent by a failed run — a scalar (same budget for every
+            run, the fixed-budget case) or a per-run array.
 
     Returns:
         The expected running time, or ``np.inf`` if no run reached the target.
@@ -66,8 +73,9 @@ def ert(runtimes, budget):
     n_success = int(success.sum())
     if n_success == 0:
         return np.inf
-    total = runtimes[success].sum() + int((~success).sum()) * budget
-    return total / n_success
+    budget = np.broadcast_to(np.asarray(budget, dtype=float), runtimes.shape)
+    total = runtimes[success].sum() + budget[~success].sum()
+    return float(total / n_success)
 
 
 def ecdf(runtimes, budgets):

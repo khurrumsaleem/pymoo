@@ -167,3 +167,68 @@ ref_point = np.array([1.2, 1.2])
 ind = HV(ref_point=ref_point)
 print("HV", ind(A))
 ```
+
+```{raw-cell}
+:raw_mimetype: text/restructuredtext
+
+.. _nb_anytime:
+```
+
+### Anytime Performance (ERT and Data Profiles)
+
++++
+
+The indicators above are *fixed-budget*: they score the final result after the run has finished. Often the more relevant question is *anytime* — **how fast** does an algorithm reach a given quality? This is the fixed-target methodology used by the [COCO/BBOB](https://numbbo.github.io/coco-doc/perf-assessment/) platform. pymoo provides the building blocks in `pymoo.indicators.anytime`.
+
+First, run with `save_history=True` and turn the history into an **attainment curve** — the best indicator value reached so far as a function of the number of function evaluations:
+
+```{code-cell} ipython3
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.optimize import minimize
+from pymoo.indicators.igd import IGD
+from pymoo.indicators.anytime import attainment_curve, first_hitting_time, ert, data_profile
+
+problem = get_problem("zdt1")
+igd = IGD(problem.pareto_front())
+
+res = minimize(problem, NSGA2(pop_size=40), ("n_gen", 50), seed=1,
+               save_history=True, verbose=False)
+
+n_evals, values = attainment_curve(res.history, igd, mode="min")
+print("reached IGD =", round(values[-1], 4), "after", int(n_evals[-1]), "evaluations")
+```
+
+The **first hitting time** is the number of evaluations to reach a target, and the **expected running time (ERT)** — COCO's `aRT` — aggregates it over several independent runs (unsuccessful runs contribute their full budget, and the denominator is the number of *successful* runs):
+
+```{code-cell} ipython3
+import numpy as np
+
+budget = 40 * 50  # pop_size * n_gen
+target = 0.01
+
+curves, runtimes = [], []
+for seed in range(1, 11):
+    res = minimize(problem, NSGA2(pop_size=40), ("n_gen", 50), seed=seed,
+                   save_history=True, verbose=False)
+    curve = attainment_curve(res.history, igd, mode="min")
+    curves.append(curve)
+    runtimes.append(first_hitting_time(*curve, target, mode="min"))
+
+print("ERT to IGD <", target, ":", round(ert(runtimes, budget), 1), "evaluations")
+```
+
+Finally, a **data profile** is the empirical cumulative distribution (ECDF) of runtimes over many (run, target) pairs — the fraction of targets solved within a given budget:
+
+```{code-cell} ipython3
+targets = [0.05, 0.02, 0.01, 0.005]
+budgets = np.linspace(0, budget, 25)
+profile = data_profile(curves, targets, budgets, mode="min")
+
+from pymoo.visualization.matplotlib import plt
+plt.plot(budgets, profile, "-o", markersize=3)
+plt.xlabel("function evaluations")
+plt.ylabel("fraction of (run, target) pairs solved")
+plt.title("Data profile (ECDF)")
+plt.ylim(0, 1)
+plt.show()
+```

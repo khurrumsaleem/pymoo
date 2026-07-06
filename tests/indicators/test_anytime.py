@@ -34,6 +34,26 @@ def test_ert_matches_coco_formula():
     assert ert([np.inf, np.inf], budget=100) == np.inf
 
 
+def test_ert_equals_coco_alternative_form():
+    # aRT must equal E(RT^s) + (1 - p_s)/p_s * E(RT^us)  (Hansen et al., COCO)
+    runtimes = np.array([12.0, 34.0, np.inf, np.inf, 8.0])
+    budget = 100.0
+    succ = np.isfinite(runtimes)
+    p_s = succ.mean()
+    rt_s = runtimes[succ].mean()
+    rt_us = budget  # each failed trial spent the full budget
+    expected = rt_s + (1 - p_s) / p_s * rt_us
+    assert ert(runtimes, budget) == pytest.approx(expected)
+
+
+def test_ert_accepts_per_run_budgets():
+    # unsuccessful trials may have spent different numbers of evaluations
+    runtimes = [10.0, np.inf, np.inf]
+    budgets = [50.0, 80.0, 120.0]  # failed runs spent 80 and 120
+    # (10 + 80 + 120) / 1 = 210
+    assert ert(runtimes, budgets) == pytest.approx(210.0)
+
+
 def test_ecdf_is_monotone_fraction():
     runtimes = [10, 20, 20, np.inf]
     budgets = [5, 10, 20, 50]
